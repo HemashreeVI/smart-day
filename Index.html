@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_blank">
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #f6f5fb; --surface: #ffffff; --surface-2: #efedf7; --text: #1c1a29; --muted: #6b6880;
+    --line: #e4e1ee; --accent: #6a46f5; --accent-ink: #ffffff; --accent-soft: #ece7ff;
+    --danger: #d23a4b; --warn: #b86e00; --ok: #1d8f4e; --blue: #2f5bd8;
+    --shadow: 0 1px 2px rgba(25, 15, 70, .05), 0 6px 20px rgba(25, 15, 70, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0e16; --surface: #1a1925; --surface-2: #24232f; --text: #ecebf5; --muted: #9b98ae;
+      --line: #2d2c3a; --accent: #8d70ff; --accent-ink: #0f0e16; --accent-soft: #2a2348;
+      --danger: #ff6b7a; --warn: #f0a640; --ok: #4fcf87; --blue: #7d9cff;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  a { color: var(--accent); }
+
+  .top { position: sticky; top: 0; z-index: 5; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 10px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); }
+  .eyebrow { color: var(--muted); font-size: 13px; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .top-actions { display: flex; gap: 8px; }
+  .icon { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); cursor: pointer;
+    display: grid; place-items: center; font-size: 18px; }
+  .icon.spin span { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  main { max-width: 640px; margin: 0 auto; padding: 4px 16px 24px; }
+  .section { margin: 18px 0 8px; display: flex; align-items: baseline; justify-content: space-between; }
+  .section h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .section .count { font-size: 13px; color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 14px; margin-bottom: 10px; }
+  .list { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+  .row:first-child { border-top: 0; }
+  .row-main { flex: 1; min-width: 0; cursor: pointer; }
+  .row-title { overflow-wrap: anywhere; }
+  .row-meta { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 2px; }
+  .row.done .row-title { text-decoration: line-through; color: var(--muted); }
+  .check { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); background: none; cursor: pointer;
+    display: grid; place-items: center; font-size: 13px; padding: 0; color: var(--accent-ink); }
+  .row.done .check { background: var(--ok); border-color: var(--ok); }
+  .prio-high .check { border-color: var(--danger); }
+  .overdue { color: var(--danger); font-weight: 600; }
+  .mini { flex: none; text-decoration: none; font-size: 17px; padding: 4px; }
+  .time { flex: none; width: 64px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar { flex: none; width: 4px; align-self: stretch; border-radius: 4px; background: var(--blue); }
+  .bar.mine { background: var(--accent); }
+  .bar.task { background: var(--warn); }
+
+  .hero { background: linear-gradient(135deg, var(--accent), #b04cf0); color: #fff; border: 0; padding: 18px; }
+  .hero h3 { margin: 0 0 4px; font-size: 20px; }
+  .hero p { margin: 0; opacity: .92; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { cursor: pointer; margin: 0; }
+  .tile b { display: block; font-size: 24px; letter-spacing: -.02em; }
+  .tile span { color: var(--muted); font-size: 13px; }
+  .empty { text-align: center; color: var(--muted); padding: 22px 12px; }
+  .hint { color: var(--muted); font-size: 13px; }
+
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: none; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 13.5px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+  .tag.exam { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+  .tag.interview { background: color-mix(in srgb, var(--blue) 15%, transparent); color: var(--blue); }
+  .tag.deadline { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+  .tag.event, .tag.skill { background: var(--accent-soft); color: var(--accent); }
+  .card-title { font-weight: 600; margin: 6px 0 4px; overflow-wrap: anywhere; }
+  .snip { color: var(--muted); font-size: 13.5px; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .btn { border: 1px solid var(--line); background: var(--surface-2); padding: 9px 14px; border-radius: 12px; cursor: pointer; text-decoration: none; color: var(--text); font-size: 14px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .btn.danger { color: var(--danger); }
+  .btn.small { padding: 6px 10px; font-size: 13px; }
+  .mail-top { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); }
+  .mail-from { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mail-time { flex: none; font-variant-numeric: tabular-nums; }
+  .mail.unread .mail-from { color: var(--text); font-weight: 700; }
+  .mail.unread .mail-from::before { content: "● "; color: var(--accent); }
+  .mail.unread .row-title { font-weight: 600; }
+  .mail-snip { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+  .when-edit { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13.5px; }
+
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin: 6px 0 10px; }
+  .cal-head b { font-size: 17px; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .dow { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0; }
+  .day { aspect-ratio: 1 / 1.05; border-radius: 12px; border: 1px solid transparent; background: var(--surface); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 6px; gap: 4px; font-size: 14px; }
+  .day.other { opacity: .38; }
+  .day.today { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .day.sel { background: var(--accent); color: var(--accent-ink); }
+  .dots { display: flex; gap: 3px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+  .dot.mine { background: var(--accent); } .dot.task { background: var(--warn); }
+  .day.sel .dot { background: var(--accent-ink); }
+
+  .fab { position: fixed; right: 18px; bottom: calc(86px + env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 18px; border: 0;
+    background: var(--accent); color: var(--accent-ink); font-size: 30px; box-shadow: 0 8px 24px rgba(106, 70, 245, .4); cursor: pointer; z-index: 6; }
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; display: flex; justify-content: space-around;
+    background: var(--surface); border-top: 1px solid var(--line); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
+  .tabs button { flex: 1; border: 0; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 11.5px; color: var(--muted); padding: 6px 0; position: relative; }
+  .tabs button.on { color: var(--accent); font-weight: 600; }
+  .tabs svg { width: 24px; height: 24px; }
+  .badge { position: absolute; top: 0; left: calc(50% + 6px); min-width: 18px; height: 18px; border-radius: 9px; background: var(--danger); color: #fff;
+    font-size: 11px; font-weight: 700; display: grid; place-items: center; padding: 0 5px; }
+
+  .backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .4); z-index: 20; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--surface); border-radius: 22px 22px 0 0;
+    max-height: 92vh; overflow-y: auto; padding: 10px 16px calc(20px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
+  .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 12px; }
+  .sheet h3 { margin: 0 0 12px; font-size: 19px; }
+  .field { display: block; margin-bottom: 12px; }
+  .field > span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .field input:not([type=checkbox]), .field select, .field textarea {
+    width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 11px 12px; outline: none; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+  .field textarea { min-height: 70px; resize: vertical; }
+  .check-line { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .check-line input { width: 20px; height: 20px; accent-color: var(--accent); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .code { font-family: ui-monospace, Menlo, monospace; background: var(--surface-2); padding: 3px 7px; border-radius: 6px; user-select: all; overflow-wrap: anywhere; }
+  .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); opacity: 0;
+    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; z-index: 30; transition: .25s; pointer-events: none; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .loading { text-align: center; color: var(--muted); padding: 60px 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div><div class="eyebrow" id="eyebrow">Smart Day</div><h1 id="title">Today</h1></div>
+  <div class="top-actions">
+    <button class="icon" id="btnScan" title="Check Gmail now" aria-label="Check Gmail now"><span>↻</span></button>
+    <button class="icon" id="btnSettings" title="Settings" aria-label="Settings"><span>⚙</span></button>
+  </div>
+</header>
+
+<main id="main"><div class="loading">Loading your day…</div></main>
+
+<button class="fab" id="fab" aria-label="Add to-do">+</button>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Today</button>
+  <button data-tab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>To-do</button>
+  <button data-tab="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Calendar</button>
+  <button data-tab="review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 13h4l2 3h4l2-3h4"/></svg>Inbox<span class="badge" id="badgeReview" hidden></span></button>
+  <button data-tab="jobs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>Jobs<span class="badge" id="badgeJobs" hidden></span></button>
+</nav>
+
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="sheet" id="sheet" hidden></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// google.script.run as promises: await api.getState()
+const api = new Proxy({}, { get: (_, fn) => (...args) => new Promise((resolve, reject) =>
+  google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args)) });
+
+const $ = (s, el = document) => el.querySelector(s);
+const main = $('#main');
+const DAY = 864e5;
+const TITLES = { today: 'Today', tasks: 'To-do', calendar: 'Calendar', review: 'Inbox', jobs: 'Openings' };
+const KIND_LABEL = { exam: 'Exam', interview: 'Interview / test', deadline: 'Deadline', event: 'Event' };
+
+let S = null;                    // server state
+let tab = 'today';
+let taskFilter = 'open';
+let jobFilter = 'new';
+let calMonth = monthStart(new Date());
+let calSel = sod(new Date());
+let eventCache = {};             // range key -> events | 'loading'
+
+try { tab = localStorage.getItem('sd.tab') || 'today'; } catch (e) { /* storage blocked */ }
+
+// ── helpers ──
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function sod(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function monthStart(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function gridStart(m) { return addDays(m, -((m.getDay() + 6) % 7)); }
+function dkey(d) { d = new Date(d); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+const yes = v => v === true || ['1', 'true', 'yes'].includes(String(v).toLowerCase());
+const isDone = t => yes(t.done);
+const fmtTime = d => new Date(d).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+function dayLabel(d) {
+  const diff = Math.round((sod(d) - sod(new Date())) / DAY);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff > 1 && diff < 7) return new Date(d).toLocaleDateString([], { weekday: 'long' });
+  return new Date(d).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+}
+const whenLabel = (iso, allDay) => iso ? dayLabel(iso) + (allDay ? '' : ' · ' + fmtTime(iso)) : '';
+function toInput(iso, allDay) {
+  if (!iso) return '';
+  const d = new Date(iso), p = n => String(n).padStart(2, '0');
+  const date = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return allDay ? date : `${date}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function fromInput(v) {
+  if (!v) return '';
+  const d = v.length === 10 ? new Date(v + 'T00:00') : new Date(v);
+  return isNaN(d) ? '' : d.toISOString();
+}
+function isOverdue(t) {
+  if (!t.due || isDone(t)) return false;
+  return yes(t.allDay) ? new Date(t.due) < sod(new Date()) : new Date(t.due) < new Date();
+}
+function daysUntil(iso) { return Math.round((sod(iso) - sod(new Date())) / DAY); }
+function senderName(from) { const m = String(from).match(/^\s*"?([^"<]+?)"?\s*</); return m ? m[1] : from; }
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+async function act(fn, ...args) {
+  try {
+    const r = await api[fn](...args);
+    if (r && r.tasks) S = r;
+    eventCache = {};
+    render();
+    return r;
+  } catch (err) {
+    toast(err && err.message ? err.message : String(err));
+  }
+}
+
+// ── events from Google Calendar (fetched on demand) ──
+function events(start, end) {
+  const key = start.toISOString() + '|' + end.toISOString();
+  const c = eventCache[key];
+  if (Array.isArray(c)) return c;
+  if (c !== 'loading') {
+    eventCache[key] = 'loading';
+    api.getEvents(start.toISOString(), end.toISOString())
+      .then(list => { eventCache[key] = list; render(); })
+      .catch(err => { eventCache[key] = []; toast(err.message || String(err)); });
+  }
+  return null;
+}
+function eventsOn(list, day) {
+  const a = sod(day), b = addDays(a, 1);
+  return (list || []).filter(e => new Date(e.start) < b && new Date(e.end) > a ||
+    (+new Date(e.start) === +new Date(e.end) && sod(e.start).getTime() === a.getTime()));
+}
+function tasksOn(day) {
+  const k = dkey(day);
+  return S.tasks.filter(t => t.due && dkey(t.due) === k);
+}
+
+// ── render ──
+function render() {
+  if (!S) return;
+  try { localStorage.setItem('sd.tab', tab); } catch (e) { /* ignore */ }
+  $('#title').textContent = TITLES[tab];
+  $('#eyebrow').textContent = tab === 'today'
+    ? new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
+    : 'Smart Day';
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  const nReview = S.suggestions.length + (S.mail || []).filter(m => m.status === 'new').length;
+  const nJobs = S.opportunities.filter(o => o.status === 'new' && (o.matched || S.settings.notifyAllOpenings)).length;
+  setBadge('#badgeReview', nReview);
+  setBadge('#badgeJobs', nJobs);
+  $('#fab').hidden = !['today', 'tasks', 'calendar'].includes(tab);
+  main.innerHTML = ({ today: viewToday, tasks: viewTasks, calendar: viewCalendar, review: viewReview, jobs: viewJobs })[tab]();
+}
+function setBadge(sel, n) { const b = $(sel); b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
+
+function taskRow(t) {
+  const meta = [];
+  if (t.due) meta.push(`<span class="${isOverdue(t) ? 'overdue' : ''}">${isOverdue(t) ? 'Overdue · ' : ''}${esc(whenLabel(t.due, yes(t.allDay)))}</span>`);
+  if (t.priority === 'high') meta.push('<span style="color:var(--danger)">● Important</span>');
+  if (t.source === 'gmail') meta.push('<span>✉ from Gmail</span>');
+  if (t.source === 'gtasks') meta.push('<span>✓ added from widget</span>');
+  if (t.calEventId) meta.push('<span>📅 on calendar</span>');
+  return `<div class="row ${isDone(t) ? 'done' : ''} prio-${esc(t.priority)}">
+    <button class="check" data-act="toggle" data-id="${esc(t.id)}" aria-label="Mark done">${isDone(t) ? '✓' : ''}</button>
+    <div class="row-main" data-act="edit" data-id="${esc(t.id)}">
+      <div class="row-title">${esc(t.title)}</div>
+      ${meta.length ? `<div class="row-meta">${meta.join('')}</div>` : ''}
+    </div>
+    ${t.link ? `<a class="mini" href="${esc(t.link)}" aria-label="Open email">✉️</a>` : ''}
+  </div>`;
+}
+
+function eventRow(e) {
+  return `<div class="row"><div class="bar ${e.mine ? 'mine' : ''}" ${calColor(e)}></div>
+    <div class="time">${e.allDay ? 'All day' : esc(fmtTime(e.start))}</div>
+    <div class="row-main"><div class="row-title">${esc(e.title)}</div>${e.cal && !e.mine ? `<div class="row-meta">${esc(e.cal)}</div>` : ''}</div></div>`;
+}
+
+function calColor(e) { return !e.mine && /^#[0-9a-f]{3,8}$/i.test(e.color || '') ? `style="background:${e.color}"` : ''; }
+
+function sortTasks(list) {
+  const pr = { high: 0, normal: 1, low: 2 };
+  return list.slice().sort((a, b) => {
+    if (!!a.due !== !!b.due) return a.due ? -1 : 1;
+    if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
+    return (pr[a.priority] ?? 1) - (pr[b.priority] ?? 1);
+  });
+}
+
+function viewToday() {
+  const now = new Date(), start = sod(now), end = addDays(start, 1), week = addDays(start, 8);
+  const open = S.tasks.filter(t => !isDone(t));
+  const overdue = sortTasks(open.filter(isOverdue));
+  const today = sortTasks(open.filter(t => t.due && !isOverdue(t) && new Date(t.due) < end));
+  const soon = sortTasks(open.filter(t => t.due && new Date(t.due) >= end && new Date(t.due) < week));
+  const ev = events(start, end);
+  const hour = now.getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const name = S.settings.name ? ', ' + esc(S.settings.name) : '';
+  const nextBig = soon.find(t => t.priority === 'high');
+  const summary = [
+    ev ? `${ev.length} event${ev.length === 1 ? '' : 's'}` : null,
+    `${today.length} to-do${today.length === 1 ? '' : 's'} today`,
+    overdue.length ? `${overdue.length} overdue` : null
+  ].filter(Boolean).join(' · ');
+  const nReview = S.suggestions.length;
+  const nJobs = S.opportunities.filter(o => o.status === 'new' && o.matched).length;
+
+  let h = `<div class="card hero"><h3>${greet}${name} 👋</h3><p>${summary}</p>
+    ${nextBig ? `<p style="margin-top:6px">⏳ ${esc(nextBig.title)} — ${daysUntil(nextBig.due) === 1 ? 'tomorrow' : 'in ' + daysUntil(nextBig.due) + ' days'}</p>` : ''}</div>`;
+
+  if (nReview || nJobs) {
+    h += `<div class="tiles">
+      <div class="card tile" data-act="goto" data-tab="review"><b>${nReview}</b><span>emails waiting for your OK</span></div>
+      <div class="card tile" data-act="goto" data-tab="jobs"><b>${nJobs}</b><span>new openings for your skills</span></div></div>`;
+  }
+
+  h += `<div class="section"><h2>Schedule</h2></div>`;
+  h += ev === null ? `<div class="list"><div class="empty">Loading calendar…</div></div>`
+    : ev.length ? `<div class="list">${ev.map(eventRow).join('')}</div>`
+    : `<div class="list"><div class="empty">No events today</div></div>`;
+
+  if (overdue.length) h += `<div class="section"><h2>Overdue</h2><span class="count">${overdue.length}</span></div><div class="list">${overdue.map(taskRow).join('')}</div>`;
+  h += `<div class="section"><h2>Due today</h2><span class="count">${today.length || ''}</span></div>`;
+  h += today.length ? `<div class="list">${today.map(taskRow).join('')}</div>` : `<div class="list"><div class="empty">Nothing due today 🎉</div></div>`;
+  if (soon.length) h += `<div class="section"><h2>Next 7 days</h2><span class="count">${soon.length}</span></div><div class="list">${soon.slice(0, 8).map(taskRow).join('')}</div>`;
+  h += `<p class="hint" style="text-align:center;margin-top:18px">${S.lastScan ? 'Gmail checked ' + esc(whenLabel(new Date(S.lastScan).toISOString())) : 'Gmail not checked yet'} · checks every 5 min</p>`;
+  return h;
+}
+
+function viewTasks() {
+  const start = sod(new Date()), end = addDays(start, 1);
+  const filters = {
+    open: ['All', t => !isDone(t)],
+    today: ['Today', t => !isDone(t) && t.due && new Date(t.due) < end],
+    upcoming: ['Upcoming', t => !isDone(t) && t.due && new Date(t.due) >= end],
+    someday: ['No date', t => !isDone(t) && !t.due],
+    important: ['Important', t => !isDone(t) && t.priority === 'high'],
+    done: ['Done', isDone]
+  };
+  const list = sortTasks(S.tasks.filter(filters[taskFilter][1]));
+  let h = `<div class="chips">${Object.entries(filters).map(([k, [label, fn]]) =>
+    `<button class="chip ${k === taskFilter ? 'on' : ''}" data-act="tfilter" data-f="${k}">${label} ${S.tasks.filter(fn).length || ''}</button>`).join('')}</div>`;
+  h += list.length ? `<div class="list">${list.map(taskRow).join('')}</div>`
+    : `<div class="list"><div class="empty">${taskFilter === 'done' ? 'Nothing finished in the last 3 days' : 'All clear. Tap + to add something.'}</div></div>`;
+  h += `<p class="hint" style="margin-top:14px">Tip: type it the way you'd say it, like <b>“Submit DBMS assignment tomorrow 5pm”</b> or <b>“Pay hostel fees by 30/10”</b>. The date gets picked up for you.</p>`;
+  return h;
+}
+
+function viewCalendar() {
+  const gs = gridStart(calMonth), ge = addDays(gs, 42);
+  const ev = events(gs, ge) || [];
+  const todayK = dkey(new Date()), selK = dkey(calSel);
+  let h = `<div class="cal-head"><button class="icon" data-act="cal" data-d="-1" aria-label="Previous month">‹</button>
+    <b>${calMonth.toLocaleDateString([], { month: 'long', year: 'numeric' })}</b>
+    <button class="icon" data-act="cal" data-d="1" aria-label="Next month">›</button></div>`;
+  h += `<div class="grid">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => `<div class="dow">${d}</div>`).join('')}`;
+  for (let i = 0; i < 42; i++) {
+    const d = addDays(gs, i), k = dkey(d);
+    const de = eventsOn(ev, d), dt = tasksOn(d).filter(t => !isDone(t) && !t.calEventId);
+    const dots = de.slice(0, 3).map(e => `<i class="dot ${e.mine ? 'mine' : ''}" ${calColor(e)}></i>`).join('') + (dt.length ? '<i class="dot task"></i>' : '');
+    h += `<div class="day ${d.getMonth() !== calMonth.getMonth() ? 'other' : ''} ${k === todayK ? 'today' : ''} ${k === selK ? 'sel' : ''}" data-act="calday" data-d="${d.toISOString()}">
+      ${d.getDate()}<div class="dots">${dots}</div></div>`;
+  }
+  h += `</div>`;
+  const de = eventsOn(ev, calSel), dt = sortTasks(tasksOn(calSel).filter(t => !t.calEventId));
+  h += `<div class="section"><h2>${esc(dayLabel(calSel))}</h2><button class="btn small" data-act="addOn">+ Add on this day</button></div>`;
+  if (!de.length && !dt.length) h += `<div class="list"><div class="empty">${events(gs, ge) === null ? 'Loading…' : 'Free day'}</div></div>`;
+  else h += `<div class="list">${de.map(eventRow).join('')}${dt.map(taskRow).join('')}</div>`;
+  h += `<p class="hint" style="margin-top:12px"><span style="color:var(--accent)">●</span> Smart Day calendar &nbsp;  other colours = your other calendars &nbsp; <span style="color:var(--warn)">●</span> to-dos</p>`;
+  return h;
+}
+
+const MAIL_TAG = { added: ['On calendar', 'event'], review: ['Needs your OK', 'deadline'], job: ['Job alert', 'skill'], todo: ['In to-do', 'interview'] };
+
+function mailTime(iso) {
+  const d = new Date(iso);
+  return sod(d).getTime() === sod(new Date()).getTime() ? fmtTime(d) : dayLabel(d);
+}
+
+function mailRow(m) {
+  const tg = MAIL_TAG[m.tag];
+  return `<div class="row mail ${m.status === 'new' ? 'unread' : ''}">
+    <div class="row-main">
+      <div class="mail-top"><span class="mail-from">${esc(senderName(m.from))}</span><span class="mail-time">${esc(mailTime(m.date))}</span></div>
+      <div class="row-title">${esc(m.subject)}</div>
+      <div class="mail-snip">${esc(m.snippet)}</div>
+      <div class="mail-actions">${tg ? `<span class="tag ${tg[1]}">${tg[0]}</span>` : ''}
+        <button class="btn small" data-act="mailTodo" data-id="${esc(m.id)}">+ To-do</button>
+        ${m.status === 'new' ? `<button class="btn small" data-act="mailSeen" data-id="${esc(m.id)}">✓ Seen</button>` : ''}
+        <a class="btn small" href="${esc(m.link)}">Open</a>
+      </div>
+    </div></div>`;
+}
+
+function viewReview() {
+  const mail = S.mail || [];
+  const newCount = mail.filter(m => m.status === 'new').length;
+  let h = '';
+  if (S.suggestions.length) {
+    h += `<div class="section" style="margin-top:4px"><h2>Add to calendar?</h2><span class="count">${S.suggestions.length}</span></div>`;
+    h += S.suggestions.map(sugCard).join('');
+  }
+  h += `<div class="section"><h2>All emails</h2>${newCount ? `<button class="btn small" data-act="mailAllSeen">Mark all seen (${newCount})</button>` : ''}</div>`;
+  h += mail.length ? `<div class="list">${mail.map(mailRow).join('')}</div>`
+    : `<div class="list"><div class="empty">New emails show up here within 5 minutes.</div></div>`;
+  return h;
+}
+
+function sugCard(s) {
+  const allDay = yes(s.allDay);
+  return `<div class="card">
+    <div class="card-head"><span class="tag ${esc(s.kind)}">${esc(KIND_LABEL[s.kind] || 'Event')}</span><span>from ${esc(senderName(s.from))}</span></div>
+    <div class="card-title">${esc(s.title)}</div>
+    <div class="snip">${esc(s.snippet)}</div>
+    <div class="when-edit">
+      <input type="${allDay ? 'date' : 'datetime-local'}" id="when-${esc(s.id)}" value="${toInput(s.start, allDay)}" class="btn small">
+      <label class="check-line" style="margin:0"><input type="checkbox" data-role="allday" data-id="${esc(s.id)}" ${allDay ? 'checked' : ''}> All day</label>
+    </div>
+    <div class="btns">
+      <button class="btn primary" data-act="sugAdd" data-id="${esc(s.id)}">Add to calendar</button>
+      <button class="btn" data-act="sugIgnore" data-id="${esc(s.id)}">Not important</button>
+      <a class="btn" href="${esc(s.link)}">Open email</a>
+      <button class="btn small danger" data-act="sugMute" data-id="${esc(s.id)}">Never from this sender</button>
+    </div></div>`;
+}
+
+function viewJobs() {
+  const filters = {
+    new: ['New', o => o.status === 'new'],
+    match: ['Matching skills', o => o.status !== 'dismissed' && !!o.matched],
+    saved: ['Saved', o => o.status === 'saved'],
+    applied: ['Applied', o => o.status === 'applied']
+  };
+  const list = S.opportunities.filter(filters[jobFilter][1])
+    .sort((a, b) => (b.matched ? 1 : 0) - (a.matched ? 1 : 0) || (a.created < b.created ? 1 : -1));
+  let h = `<div class="chips">${Object.entries(filters).map(([k, [label, fn]]) =>
+    `<button class="chip ${k === jobFilter ? 'on' : ''}" data-act="jfilter" data-f="${k}">${label} ${S.opportunities.filter(fn).length || ''}</button>`).join('')}</div>`;
+  h += `<p class="hint">Your skills: ${S.settings.skills.map(s => `<span class="tag skill">${esc(s)}</span>`).join(' ')} <a href="#" target="_self" data-act="settings">edit</a></p>`;
+  if (!list.length) return h + `<div class="card empty"><p style="font-size:32px;margin:0">💼</p><p><b>No openings here yet</b></p>
+    <p class="hint">Turn on email job alerts in Internshala, Unstop and LinkedIn for your skills. Smart Day reads those alert emails and pings you when one matches.</p></div>`;
+  return h + list.map(o => {
+    const dl = o.deadline ? daysUntil(o.deadline) : null;
+    return `<div class="card">
+      <div class="card-head"><span class="tag">${esc(o.platform)}</span>
+        ${o.deadline ? `<span class="${dl <= 2 ? 'overdue' : ''}">Apply by ${esc(dayLabel(o.deadline))}${dl >= 0 ? ` (${dl === 0 ? 'today' : dl + 'd left'})` : ''}</span>` : ''}
+        <span>${esc(dayLabel(o.created))}</span></div>
+      <div class="card-title">${esc(o.title)}</div>
+      ${o.matched ? `<div style="margin:4px 0 6px">${o.matched.split(',').map(s => `<span class="tag skill">✓ ${esc(s.trim())}</span>`).join(' ')}</div>` : ''}
+      <div class="snip">${esc(o.snippet)}</div>
+      <div class="btns">
+        <a class="btn primary" href="${esc(o.applyLink || o.link)}">Open</a>
+        ${o.status !== 'saved' ? `<button class="btn" data-act="opp" data-s="saved" data-id="${esc(o.id)}">⭐ Save</button>` : ''}
+        ${o.status !== 'applied' ? `<button class="btn" data-act="opp" data-s="applied" data-id="${esc(o.id)}">✓ Applied</button>` : ''}
+        ${o.deadline ? `<button class="btn" data-act="oppCal" data-id="${esc(o.id)}">📅 Deadline</button>` : ''}
+        <a class="btn" href="${esc(o.link)}">Email</a>
+        <button class="btn small danger" data-act="opp" data-s="dismissed" data-id="${esc(o.id)}">Hide</button>
+      </div></div>`;
+  }).join('');
+}
+
+// ── bottom sheets ──
+function openSheet(html) {
+  $('#sheet').innerHTML = '<div class="grab"></div>' + html;
+  $('#sheet').hidden = false; $('#backdrop').hidden = false;
+  const first = $('#sheet input[autofocus]'); if (first) setTimeout(() => first.focus(), 50);
+}
+function closeSheet() { $('#sheet').hidden = true; $('#backdrop').hidden = true; }
+
+function openTaskForm(task, presetDay, fromMail) {
+  const t = task || { title: fromMail ? fromMail.subject : '', notes: fromMail ? 'From ' + senderName(fromMail.from) : '',
+    due: presetDay ? presetDay.toISOString() : '', allDay: presetDay ? '1' : '', priority: 'normal' };
+  const allDay = yes(t.allDay);
+  openSheet(`<h3>${task ? 'Edit to-do' : 'New to-do'}</h3>
+    <form id="taskForm" autocomplete="off">
+      <label class="field"><span>What do you need to do?</span>
+        <input name="text" value="${esc(t.title)}" placeholder="e.g. Submit DBMS assignment tomorrow 5pm" ${task ? '' : 'autofocus'}></label>
+      <div class="two">
+        <label class="field"><span>When (optional)</span>
+          <input name="due" type="${allDay ? 'date' : 'datetime-local'}" value="${toInput(t.due, allDay)}"></label>
+        <label class="field"><span>Priority</span>
+          <select name="priority">${['high', 'normal', 'low'].map(p => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${{ high: 'Important', normal: 'Normal', low: 'Low' }[p]}</option>`).join('')}</select></label>
+      </div>
+      <label class="check-line"><input type="checkbox" name="allDay" ${allDay ? 'checked' : ''}> All day</label>
+      ${t.calEventId ? '<p class="hint">📅 This one is on your calendar.</p>' : `<label class="check-line"><input type="checkbox" name="toCalendar"> Also put it on my calendar</label>`}
+      <label class="field"><span>Notes</span><textarea name="notes">${esc(t.notes)}</textarea></label>
+      <div class="btns">
+        <button class="btn primary" type="submit">${task ? 'Save' : 'Add'}</button>
+        <button class="btn" type="button" data-act="close">Cancel</button>
+        ${task ? `<button class="btn danger" type="button" data-act="del" data-id="${esc(task.id)}" style="margin-left:auto">Delete</button>` : ''}
+      </div>
+    </form>`);
+  const f = $('#taskForm');
+  f.allDay.addEventListener('change', () => swapDateInput(f.due, f.allDay.checked));
+  f.addEventListener('submit', e => {
+    e.preventDefault();
+    const input = {
+      text: f.text.value.trim(), due: fromInput(f.due.value), allDay: f.allDay.checked,
+      priority: f.priority.value, notes: f.notes.value, toCalendar: !!(f.toCalendar && f.toCalendar.checked)
+    };
+    if (fromMail) { input.mailId = fromMail.id; input.link = fromMail.link; }
+    if (!input.text) return toast('Give it a name first');
+    closeSheet();
+    toast(task ? 'Saving…' : 'Adding…');
+    task ? act('updateTask', task.id, input) : act('quickAdd', input);
+  });
+}
+
+function swapDateInput(input, allDay) {
+  const v = input.value;
+  input.type = allDay ? 'date' : 'datetime-local';
+  input.value = !v ? '' : allDay ? v.slice(0, 10) : (v.length === 10 ? v + 'T09:00' : v);
+}
+
+function openSettings() {
+  const s = S.settings;
+  openSheet(`<h3>Settings</h3>
+    <form id="setForm" autocomplete="off">
+      <label class="field"><span>Your name</span><input name="name" value="${esc(s.name)}" placeholder="For your morning greeting"></label>
+      <label class="field"><span>Your skills (comma separated)</span><textarea name="skills">${esc(s.skills.join(', '))}</textarea></label>
+      <label class="check-line"><input type="checkbox" name="notifyAllOpenings" ${s.notifyAllOpenings ? 'checked' : ''}> Notify me about every opening, not just matching ones</label>
+      <label class="check-line"><input type="checkbox" name="notifyAllEmails" ${s.notifyAllEmails ? 'checked' : ''}> Send me a Telegram message for every new email</label>
+      <label class="field"><span>Job alert senders</span><textarea name="opportunitySenders">${esc(s.opportunitySenders.join(', '))}</textarea></label>
+      <label class="field"><span>Important senders (your college domain, professors, placement cell…)</span><textarea name="importantSenders">${esc(s.importantSenders.join(', '))}</textarea></label>
+      <label class="field"><span>Important words</span><textarea name="importantKeywords">${esc(s.importantKeywords.join(', '))}</textarea></label>
+      <label class="field"><span>Also show these calendars (e.g. your second Gmail address, shared with this account)</span><textarea name="extraCalendars" placeholder="second.account@gmail.com">${esc((s.extraCalendars || []).join(', '))}</textarea></label>
+      <label class="field"><span>Never look at emails from</span><textarea name="ignoreSenders" placeholder="e.g. newsletter@shop.com">${esc(s.ignoreSenders.join(', '))}</textarea></label>
+      <div class="two">
+        <label class="field"><span>Auto-add score (lower = adds more without asking)</span><input name="autoAddScore" type="number" min="1" max="9" value="${esc(s.autoAddScore)}"></label>
+        <label class="field"><span>Morning summary at (hour, 0–23)</span><input name="digestHour" type="number" min="0" max="23" value="${esc(s.digestHour)}"></label>
+        <label class="field"><span>To-do reminder (minutes before)</span><input name="remindBeforeMin" type="number" min="5" value="${esc(s.remindBeforeMin)}"></label>
+        <label class="field"><span>Calendar alerts (minutes before)</span><input name="eventReminders" value="${esc(s.eventReminders.join(', '))}"></label>
+      </div>
+      <h3 style="margin-top:8px">Phone notifications (Telegram)</h3>
+      ${s.telegramChatId ? '<p class="hint" style="color:var(--ok)">✓ Connected. Notifications arrive in your Telegram bot chat.</p>' : `
+      <ol class="hint" style="padding-left:18px;margin:0 0 12px">
+        <li>In Telegram, search <b>@BotFather</b> (blue tick), tap Start and send <b>/newbot</b>.</li>
+        <li>Give it a name (e.g. Smart Day) and a username ending in “bot”. Copy the token it gives you.</li>
+        <li>Tap the link to your new bot (t.me/…) and press <b>Start</b>.</li>
+        <li>Paste the token below and tap <b>Connect Telegram</b>.</li>
+      </ol>`}
+      <label class="field"><span>Bot token</span><input name="telegramToken" id="tgToken" value="${esc(s.telegramToken)}" placeholder="1234567890:AAH…" autocomplete="off"></label>
+      <div class="btns" style="margin:0 0 14px"><button class="btn primary" type="button" data-act="tgConnect">${s.telegramChatId ? 'Reconnect' : 'Connect Telegram'}</button></div>
+      <details style="margin-bottom:12px"><summary class="hint">Use ntfy instead</summary>
+        <div class="two" style="margin-top:10px">
+          <label class="field"><span>ntfy server</span><input name="ntfyServer" value="${esc(s.ntfyServer)}"></label>
+          <label class="field"><span>Topic</span><input name="ntfyTopic" value="${esc(s.ntfyTopic)}"></label>
+        </div>
+      </details>
+      <div class="btns">
+        <button class="btn primary" type="submit">Save settings</button>
+        <button class="btn" type="button" data-act="testPush">Send test notification</button>
+        <button class="btn" type="button" data-act="close">Close</button>
+      </div>
+      <p class="hint" style="margin-top:16px">Your data is stored in a Google Sheet in your own Drive: <a href="${esc(S.dbUrl)}">open it</a>. Events go on the “Smart Day” calendar in Google Calendar.</p>
+    </form>`);
+  const f = $('#setForm');
+  f.addEventListener('submit', e => {
+    e.preventDefault();
+    const input = {};
+    ['name', 'skills', 'opportunitySenders', 'importantSenders', 'importantKeywords', 'ignoreSenders', 'extraCalendars',
+      'autoAddScore', 'digestHour', 'remindBeforeMin', 'eventReminders', 'ntfyServer', 'ntfyTopic'].forEach(k => input[k] = f[k].value);
+    input.notifyAllOpenings = f.notifyAllOpenings.checked;
+    input.notifyAllEmails = f.notifyAllEmails.checked;
+    closeSheet();
+    act('saveSettings', input).then(r => r && toast('Settings saved'));
+  });
+}
+
+// ── events ──
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const a = el.dataset.act, id = el.dataset.id;
+  if (el.tagName === 'A') e.preventDefault();
+  switch (a) {
+    case 'goto': tab = el.dataset.tab; render(); window.scrollTo(0, 0); break;
+    case 'toggle': {
+      const t = S.tasks.find(x => x.id === id);
+      if (t) { t.done = isDone(t) ? '' : '1'; t.doneAt = new Date().toISOString(); render(); } // feel instant
+      act('toggleTask', id);
+      break;
+    }
+    case 'edit': openTaskForm(S.tasks.find(x => x.id === id)); break;
+    case 'del': closeSheet(); act('deleteTask', id).then(r => r && toast('Deleted')); break;
+    case 'close': closeSheet(); break;
+    case 'tfilter': taskFilter = el.dataset.f; render(); break;
+    case 'jfilter': jobFilter = el.dataset.f; render(); break;
+    case 'cal': calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + Number(el.dataset.d), 1); render(); break;
+    case 'calday': calSel = sod(el.dataset.d); render(); break;
+    case 'addOn': openTaskForm(null, calSel); break;
+    case 'sugAdd': {
+      const input = $('#when-' + CSS.escape(id));
+      const allDay = input.type === 'date';
+      const start = fromInput(input.value);
+      if (!start) return toast('Pick a date first');
+      toast('Adding to your calendar…');
+      act('approveSuggestion', id, start, allDay).then(r => r && toast('Added ✓'));
+      break;
+    }
+    case 'mailTodo': openTaskForm(null, null, S.mail.find(m => m.id === id)); break;
+    case 'mailSeen': {
+      const m = S.mail.find(x => x.id === id);
+      if (m) { m.status = 'seen'; render(); }
+      act('mailSeen', id);
+      break;
+    }
+    case 'mailAllSeen': S.mail.forEach(m => { if (m.status === 'new') m.status = 'seen'; }); render(); act('mailAllSeen'); break;
+    case 'sugIgnore': act('ignoreSuggestion', id); break;
+    case 'sugMute': act('muteSender', id).then(r => r && toast('You won’t see emails from them again')); break;
+    case 'opp': act('setOppStatus', id, el.dataset.s); break;
+    case 'oppCal': toast('Adding deadline…'); act('oppDeadlineToCalendar', id).then(r => r && toast('Deadline added ✓')); break;
+    case 'settings': openSettings(); break;
+    case 'tgConnect': {
+      const token = $('#tgToken').value.trim();
+      if (!token) return toast('Paste your bot token first');
+      toast('Connecting…');
+      act('connectTelegram', token).then(r => { if (r) { closeSheet(); toast('Connected ✓ Check Telegram'); } });
+      break;
+    }
+    case 'testPush':
+      try { await api.testPush(); toast('Sent! Check your phone.'); } catch (err) { toast(err.message || String(err)); }
+      break;
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.dataset.role === 'allday') swapDateInput($('#when-' + CSS.escape(e.target.dataset.id)), e.target.checked);
+});
+
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-tab]');
+  if (b) { tab = b.dataset.tab; render(); window.scrollTo(0, 0); }
+});
+$('#fab').addEventListener('click', () => openTaskForm(null, tab === 'calendar' ? calSel : null));
+$('#backdrop').addEventListener('click', closeSheet);
+$('#btnSettings').addEventListener('click', () => S && openSettings());
+$('#btnScan').addEventListener('click', async () => {
+  const b = $('#btnScan');
+  if (b.classList.contains('spin')) return;
+  b.classList.add('spin');
+  try {
+    const { counts, state } = await api.runScanNow();
+    S = state; eventCache = {}; render();
+    const parts = [`Checked ${counts.emails} new email${counts.emails === 1 ? '' : 's'}`];
+    if (counts.added) parts.push(`${counts.added} added`);
+    if (counts.suggestions) parts.push(`${counts.suggestions} to review`);
+    if (counts.openings) parts.push(`${counts.openings} opening${counts.openings === 1 ? '' : 's'}`);
+    toast(parts.join(' · '));
+  } catch (err) { toast(err.message || String(err)); }
+  b.classList.remove('spin');
+});
+
+// refresh when you come back to the app
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && S) api.getState().then(r => { S = r; eventCache = {}; render(); }).catch(() => {});
+});
+
+api.getState().then(r => { S = r; render(); })
+  .catch(err => { main.innerHTML = `<div class="card empty"><p><b>Couldn't load</b></p><p class="hint">${esc(err.message || err)}</p><p class="hint">Did you run <b>setup()</b> in the script editor first?</p></div>`; });
+</script>
+</body>
+</html>
